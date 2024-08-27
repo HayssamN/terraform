@@ -3469,6 +3469,113 @@ func TestResourceChange_nestedList(t *testing.T) {
         # (1 unchanged block hidden)
     }`,
 		},
+		"in-place update - unknown block": {
+			Action: plans.Update,
+			Mode:   addrs.ManagedResourceMode,
+			Before: cty.ObjectVal(map[string]cty.Value{
+				"id":  cty.StringVal("i-02ae66f368e8518a9"),
+				"ami": cty.StringVal("ami-BEFORE"),
+				"disks": cty.ListVal([]cty.Value{
+					cty.ObjectVal(map[string]cty.Value{
+						"mount_point": cty.StringVal("/var/diska"),
+						"size":        cty.StringVal("50GB"),
+					}),
+				}),
+				"root_block_device": cty.ListVal([]cty.Value{
+					cty.ObjectVal(map[string]cty.Value{
+						"volume_type": cty.StringVal("gp1"),
+						"new_field":   cty.StringVal("new_value"),
+					}),
+					cty.ObjectVal(map[string]cty.Value{
+						"volume_type": cty.StringVal("gp2"),
+						"new_field":   cty.StringVal("new_value"),
+					}),
+				}),
+			}),
+			After: cty.ObjectVal(map[string]cty.Value{
+				"id":  cty.StringVal("i-02ae66f368e8518a9"),
+				"ami": cty.StringVal("ami-AFTER"),
+				"disks": cty.ListVal([]cty.Value{
+					cty.ObjectVal(map[string]cty.Value{
+						"mount_point": cty.StringVal("/var/diska"),
+						"size":        cty.StringVal("50GB"),
+					}),
+				}),
+				"root_block_device": cty.UnknownVal(cty.List(cty.Object(map[string]cty.Type{
+					"volume_type": cty.String,
+					"new_field":   cty.String,
+				}))),
+			}),
+			RequiredReplace: cty.NewPathSet(),
+			Schema:          testSchemaPlus(configschema.NestingList),
+			ExpectedOutput: `  # test_instance.example will be updated in-place
+  ~ resource "test_instance" "example" {
+      ~ ami   = "ami-BEFORE" -> "ami-AFTER"
+        id    = "i-02ae66f368e8518a9"
+        # (1 unchanged attribute hidden)
+
+      ~ root_block_device {
+          + ami   = (known after apply)
+          + disks = (known after apply)
+          + id    = (known after apply)
+        } -> (known after apply)
+    }`,
+		},
+		"in-place update - unknown block with replace": {
+			Action: plans.Update,
+			Mode:   addrs.ManagedResourceMode,
+			Before: cty.ObjectVal(map[string]cty.Value{
+				"id":  cty.StringVal("i-02ae66f368e8518a9"),
+				"ami": cty.StringVal("ami-BEFORE"),
+				"disks": cty.ListVal([]cty.Value{
+					cty.ObjectVal(map[string]cty.Value{
+						"mount_point": cty.StringVal("/var/diska"),
+						"size":        cty.StringVal("50GB"),
+					}),
+				}),
+				"root_block_device": cty.ListVal([]cty.Value{
+					cty.ObjectVal(map[string]cty.Value{
+						"volume_type": cty.StringVal("gp1"),
+						"new_field":   cty.StringVal("new_value"),
+					}),
+					cty.ObjectVal(map[string]cty.Value{
+						"volume_type": cty.StringVal("gp2"),
+						"new_field":   cty.StringVal("new_value"),
+					}),
+				}),
+			}),
+			After: cty.ObjectVal(map[string]cty.Value{
+				"id":  cty.StringVal("i-02ae66f368e8518a9"),
+				"ami": cty.StringVal("ami-AFTER"),
+				"disks": cty.ListVal([]cty.Value{
+					cty.ObjectVal(map[string]cty.Value{
+						"mount_point": cty.StringVal("/var/diska"),
+						"size":        cty.StringVal("50GB"),
+					}),
+				}),
+				"root_block_device": cty.UnknownVal(cty.List(cty.Object(map[string]cty.Type{
+					"volume_type": cty.String,
+					"new_field":   cty.String,
+				}))),
+			}),
+			RequiredReplace: cty.NewPathSet(
+				cty.GetAttrPath("root_block_device").IndexInt(0).GetAttr("volume_type"),
+				cty.GetAttrPath("root_block_device").IndexInt(1).GetAttr("volume_type"),
+			),
+			Schema: testSchemaPlus(configschema.NestingList),
+			ExpectedOutput: `  # test_instance.example will be updated in-place
+  ~ resource "test_instance" "example" {
+      ~ ami   = "ami-BEFORE" -> "ami-AFTER"
+        id    = "i-02ae66f368e8518a9"
+        # (1 unchanged attribute hidden)
+
+      ~ root_block_device { # forces replacement
+          + ami   = (known after apply)
+          + disks = (known after apply)
+          + id    = (known after apply)
+        } -> (known after apply)
+    }`,
+		},
 		"in-place update - modification": {
 			Action: plans.Update,
 			Mode:   addrs.ManagedResourceMode,
