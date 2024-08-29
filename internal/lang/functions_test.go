@@ -363,6 +363,21 @@ func TestFunctions(t *testing.T) {
 			},
 		},
 
+		"ephemeral": {
+			{
+				`ephemeral("ephemeral")`,
+				cty.StringVal("ephemeral").Mark(marks.Ephemeral),
+			},
+			{
+				`ephemeral(local.unknown)`,
+				cty.UnknownVal(cty.String).Mark(marks.Ephemeral),
+			},
+			{
+				`ephemeral(local.unknown_sensitive)`,
+				cty.UnknownVal(cty.String).Mark(marks.Ephemeral).Mark(marks.Sensitive),
+			},
+		},
+
 		"ephemeralasnull": {
 			{
 				`ephemeralasnull(local.ephemeral)`,
@@ -1341,6 +1356,8 @@ func TestFunctions(t *testing.T) {
 						LocalValues: map[string]cty.Value{
 							"greeting_template": cty.StringVal("Hello, ${name}!"),
 							"ephemeral":         cty.StringVal("ephemeral").Mark(marks.Ephemeral),
+							"unknown":           cty.UnknownVal(cty.String),
+							"unknown_sensitive": cty.UnknownVal(cty.String).Mark(marks.Sensitive),
 						},
 					}
 					scope := &Scope{
