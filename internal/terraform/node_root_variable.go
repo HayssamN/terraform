@@ -105,6 +105,7 @@ func (n *NodeRootVariable) Execute(ctx EvalContext, op walkOperation) tfdiags.Di
 		givenVal,
 		n.Config,
 	)
+	log.Printf("[INFO] NodeRootVariable: Evaluated value of %s is: %s",n.Addr, finalVal.GoString())
 	diags = diags.Append(moreDiags)
 	if moreDiags.HasErrors() {
 		// No point in proceeding to validations then, because they'll

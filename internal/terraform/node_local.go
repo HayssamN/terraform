@@ -144,6 +144,7 @@ func (n *NodeLocal) Execute(ctx EvalContext, op walkOperation) (diags tfdiags.Di
 	namedVals := ctx.NamedValues()
 	val, diags := evaluateLocalValue(n.Config, n.Addr.LocalValue, n.Addr.String(), ctx)
 	namedVals.SetLocalValue(n.Addr, val)
+	log.Printf("[TRACE] Evaluated value of %s is %s", n.Addr.LocalValue,val.GoString())
 	return diags
 }
 
